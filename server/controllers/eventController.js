@@ -1,14 +1,15 @@
-import { db } from '../config/db.js';
 import cloudinary from '../config/cloudinary.js';
+import eventModal from '../modal/event.modal.js';
 
-
-export const getAllEvents = (req, res) => {
-  db.query('SELECT * FROM events', (err, result) => {
-    if (err) return res.status(500).send('Database error');
-    res.json(result);
-  });
+export const getAllEvents = async (req, res) => {
+  try {
+    const events = await eventModal.getAllEvents();
+    res.json(events);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Database error');
+  }
 };
-
 
 export const createEvent = async (req, res) => {
   const { title, description, date, location, tickets_available } = req.body;
@@ -19,23 +20,14 @@ export const createEvent = async (req, res) => {
 
     const stream = cloudinary.uploader.upload_stream(
       { folder: 'event_photos' },
-      (error, result) => {
+      async (error, result) => {
         if (error) return res.status(500).json({ message: 'Cloudinary upload error', error });
 
         const photo_url = result.secure_url;
+        const success = await eventModal.createEvent({ title, description, date, location, tickets_available, photo_url });
 
-        const query = `
-          INSERT INTO events (title, description, date, location, tickets_available, photo_url)
-          VALUES (?, ?, ?, ?, ?, ?)
-        `;
-        db.query(
-          query,
-          [title, description, date, location, tickets_available, photo_url],
-          (err) => {
-            if (err) return res.status(500).send('Error creating event');
-            res.status(201).send('Event created with photo');
-          }
-        );
+        if (!success) return res.status(500).send('Error creating event');
+        res.status(201).send('Event created with photo');
       }
     );
 
@@ -46,29 +38,25 @@ export const createEvent = async (req, res) => {
   }
 };
 
-
 export const updateEvent = async (req, res) => {
   const { id } = req.params;
   const { title, description, date, location, tickets_available } = req.body;
   const file = req.file;
 
   try {
-    const updateQuery = async (photo_url = null) => {
-      const query = `
-        UPDATE events 
-        SET title = ?, description = ?, date = ?, location = ?, tickets_available = ?
-        ${photo_url ? ', photo_url = ?' : ''}
-        WHERE id = ?
-      `;
-
-      const values = photo_url
-        ? [title, description, date, location, tickets_available, photo_url, id]
-        : [title, description, date, location, tickets_available, id];
-
-      db.query(query, values, (err) => {
-        if (err) return res.status(500).send('Error updating event');
-        res.send('Event updated');
+    const handleUpdate = async (photo_url = null) => {
+      const success = await eventModal.updateEvent({
+        id,
+        title,
+        description,
+        date,
+        location,
+        tickets_available,
+        photo_url,
       });
+
+      if (!success) return res.status(500).send('Error updating event');
+      res.send('Event updated');
     };
 
     if (file) {
@@ -76,12 +64,12 @@ export const updateEvent = async (req, res) => {
         { folder: 'event_photos' },
         async (error, result) => {
           if (error) return res.status(500).json({ message: 'Cloudinary upload error', error });
-          await updateQuery(result.secure_url);
+          await handleUpdate(result.secure_url);
         }
       );
       stream.end(file.buffer);
     } else {
-      await updateQuery(); // No photo uploaded
+      await handleUpdate(); // No image provided
     }
   } catch (err) {
     console.error(err);
@@ -89,12 +77,15 @@ export const updateEvent = async (req, res) => {
   }
 };
 
-// DELETE event
-export const deleteEvent = (req, res) => {
+export const deleteEvent = async (req, res) => {
   const { id } = req.params;
 
-  db.query('DELETE FROM events WHERE id = ?', [id], (err) => {
-    if (err) return res.status(500).send('Error deleting event');
+  try {
+    const success = await eventModal.deleteEvent(id);
+    if (!success) return res.status(500).send('Error deleting event');
     res.send('Event deleted');
-  });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
+  }
 };

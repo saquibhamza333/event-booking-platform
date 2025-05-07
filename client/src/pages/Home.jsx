@@ -3,6 +3,7 @@ import HeroSection from "../components/HeroSection";
 import Header from "../components/Header";
 import Login from "./Login";
 import Signup from "./Signup";
+import Events from "./Events";
 
 const Hero = () => {
   return (
@@ -11,8 +12,11 @@ const Hero = () => {
     <HeroSection/>
     <Login/>
     <Signup/>
+   
     
     </div>
+
+     
   );
 };
 

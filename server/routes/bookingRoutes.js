@@ -9,7 +9,6 @@ import { isAdmin } from '../middleware/admin.js';
 
 const router = express.Router();
 
-
 router.post('/:event_id', authenticateToken, bookEvent);
 
 

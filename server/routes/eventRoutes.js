@@ -9,7 +9,8 @@ import {
 
 import { isAdmin } from '../middleware/admin.js';
 import authenticateToken from '../middleware/authenticateToken.js';
-import upload from '../middleware/upload.js';
+import { upload } from '../middleware/multer.middleware.js';
+
 
 const router = express.Router();
 

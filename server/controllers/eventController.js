@@ -1,5 +1,5 @@
-import cloudinary from '../config/cloudinary.js';
-import eventModal from '../modal/event.modal.js';
+import eventModel from "../modal/event.modal.js"
+import uploadOnCloudinary from '../utils/cloudinary.js';
 
 export const getAllEvents = async (req, res) => {
   try {
@@ -14,29 +14,43 @@ export const getAllEvents = async (req, res) => {
 export const createEvent = async (req, res) => {
   const { title, description, date, location, tickets_available } = req.body;
   const file = req.file;
+  console.log(file);
+
+  console.log("Received Data:", title, description, date, location, tickets_available);
+  console.log("Received File:", file);
+  console.log("In create event controller");
 
   try {
-    if (!file) return res.status(400).json({ message: 'Photo is required' });
+    if (!file) {
+      return res.status(400).json({ message: 'Photo is required' });
+    }
+console.log(file)
+    const photoResult = await uploadOnCloudinary(file.path); 
 
-    const stream = cloudinary.uploader.upload_stream(
-      { folder: 'event_photos' },
-      async (error, result) => {
-        if (error) return res.status(500).json({ message: 'Cloudinary upload error', error });
+    console.log(`photpresult ${photoResult}`)
 
-        const photo_url = result.secure_url;
-        const success = await eventModal.createEvent({ title, description, date, location, tickets_available, photo_url });
+    if (!photoResult?.url) {
+      return res.status(500).json({ message: 'Image upload failed' });
+    }
 
-        if (!success) return res.status(500).send('Error creating event');
-        res.status(201).send('Event created with photo');
-      }
+    await eventModel.createEvent(
+      title,
+      description,
+      date,
+      location,
+      tickets_available,
+      photoResult.url
     );
 
-    stream.end(file.buffer);
+    console.log("Event created successfully");
+    return res.status(201).json({ message: 'Event created successfully' });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Server error');
+    console.error("Error creating event:", err);
+    return res.status(500).json({ message: 'Server error' });
   }
 };
+
 
 export const updateEvent = async (req, res) => {
   const { id } = req.params;

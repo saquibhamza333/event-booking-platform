@@ -7,11 +7,13 @@ const eventModel = {
   },
 
   createEvent: async ({ title, description, date, location, tickets_available, photo_url }) => {
+    console.log('in create event')
     const [result] = await db.query(
       `INSERT INTO events (title, description, date, location, tickets_available, photo_url)
        VALUES (?, ?, ?, ?, ?, ?)`,
       [title, description, date, location, tickets_available, photo_url]
     );
+    console.log(`event created ${result}`);
     return result.affectedRows === 1;
   },
 

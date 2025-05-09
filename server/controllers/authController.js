@@ -49,8 +49,9 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    const accessToken = generateAccessToken(user.id);
-    const refreshToken = generateRefreshToken(user.id);
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
+    
 
     await authModal.updateRefreshToken(user.id, refreshToken);
   
@@ -58,7 +59,8 @@ export const login = async (req, res) => {
     return res.status(200).json({
       message: 'Login successful',
       accessToken,
-      refreshToken
+      refreshToken,
+      user,
     });
 
   } catch (error) {

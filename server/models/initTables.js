@@ -1,4 +1,3 @@
-
 import { db } from '../config/db.js';
 
 export const initTables = () => {
@@ -8,15 +7,9 @@ export const initTables = () => {
       return;
     }
 
-    const createUsersTable = `
-      CREATE TABLE IF NOT EXISTS users (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        name VARCHAR(100),
-        email VARCHAR(100) UNIQUE,
-        password VARCHAR(255),
-        role ENUM('user', 'admin') DEFAULT 'user',
-        refresh_token TEXT
-      );
+    const dropTables = `
+      DROP TABLE IF EXISTS bookings;
+      DROP TABLE IF EXISTS events;
     `;
 
     const createEventsTable = `
@@ -42,30 +35,42 @@ export const initTables = () => {
       );
     `;
 
-    connection.query(createUsersTable, (err) => {
-      if (err) {
-        console.error('Error creating users table:', err);
-      } else {
-        console.log('Users table ensured.');
-      }
-    });
+    const seedEvents = `
+      INSERT INTO events (title, description, date, location, tickets_available, photo_url)
+      VALUES 
+      ('Music Fest', 'A grand music festival.', '2025-06-01', 'Mumbai', 100, 'https://dummyimage.com/300'),
+      ('Tech Conference', 'Annual tech meetup.', '2025-06-10', 'Bangalore', 200, 'https://dummyimage.com/300');
+    `;
 
-    connection.query(createEventsTable, (err) => {
+    connection.query(dropTables, (err) => {
       if (err) {
-        console.error('Error creating events table:', err);
-      } else {
-        console.log('Events table ensured.');
+        console.error('Error dropping tables:', err);
+        connection.release();
+        return;
       }
-    });
 
-    connection.query(createBookingsTable, (err) => {
-      if (err) {
-        console.error('Error creating bookings table:', err);
-      } else {
-        console.log(' Bookings table ensured.');
-      }
-    });
+      connection.query(createEventsTable, (err) => {
+        if (err) {
+          console.error('Error creating events table:', err);
+        } else {
+          console.log('✅ Events table created');
 
-    connection.release();
+          connection.query(seedEvents, (err) => {
+            if (err) console.error('Error seeding events:', err);
+            else console.log('🌱 Events table seeded');
+          });
+        }
+      });
+
+      connection.query(createBookingsTable, (err) => {
+        if (err) {
+          console.error('Error creating bookings table:', err);
+        } else {
+          console.log('✅ Bookings table created');
+        }
+      });
+
+      connection.release();
+    });
   });
 };

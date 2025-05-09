@@ -29,12 +29,14 @@ const Login = () => {
       loginSchema.parse(formData);
 
       const res = await axios.post('http://localhost:5000/api/auth/login', formData);
+console.log(res.data)
 
       dispatch(loginSuccess({
         accessToken: res.data.accessToken,
         refreshToken: res.data.refreshToken,
         user: res.data.user
       }));
+      
 
       toast.success("Login successful!");
       navigate('/');
